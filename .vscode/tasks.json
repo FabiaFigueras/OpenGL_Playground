@@ -5,12 +5,9 @@
     "tasks": [
         // HelloWorld task
         {
-            "label": "Build",
+            "label": "Build and Run",
             "type": "shell",
-            "command": "g++",
-            "args": [
-                "-o", "build/HelloWorld", "-g", "mains.cpp"
-            ],
+            "command": "cd build; mingw32-make; .\\bin\\OpenGL_Playground.exe",
             "group": {
                 "kind": "build",
                 "isDefault": true

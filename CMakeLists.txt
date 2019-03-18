@@ -10,7 +10,7 @@ link_directories(${OPENGL_gl_LIBRARY})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
 
 # Add source files and link libraries
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 link_directories(${PROJECT_NAME} ${DEPENDENCIES}/lib)
 
 # Executable will go inside the 'build/bin/' directory
