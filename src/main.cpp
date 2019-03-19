@@ -9,6 +9,9 @@ int gWinHeight = 480;
 int gFbWidth  = 640;
 int gFbHeight = 480;
 
+double previousSeconds;
+int frameCount;
+
 // Methods to resize the window and the framebuffer if the user rezises the window
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
     gWinWidth = width;
@@ -71,6 +74,25 @@ void logGLParams() {
     glGetBooleanv(params[11], &s);
     logger::glLog("%s %u\n", names[11], (unsigned int)s);
     logger::glLog("------------------------------\n\n");
+}
+
+// We will use this function to update the window title with a frame rate
+void updateFpsCounter(GLFWwindow* window) {
+    double currentSeconds;
+    double elapsedSeconds;
+    currentSeconds = glfwGetTime();
+    elapsedSeconds = currentSeconds - previousSeconds;
+    // Limit text updates to 4 per second
+    if (elapsedSeconds > 0.25) {
+        previousSeconds = currentSeconds;
+        char tmp[128];
+        double fps = (double)frameCount / elapsedSeconds;
+        double frameTime = 1000 / fps; 
+        sprintf(tmp, "opengl @ fps: %.2f - frameTime: %.2fms", fps, frameTime);
+        glfwSetWindowTitle(window, tmp);
+        frameCount = 0;
+    }
+    frameCount++;
 }
 
 int main() {
@@ -185,6 +207,7 @@ int main() {
 
     // Close the program when we click the ESC key
     while(!glfwWindowShouldClose(window)) {
+        updateFpsCounter(window);
         // Wipe the surface
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, gFbWidth, gFbHeight);
