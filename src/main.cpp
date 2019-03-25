@@ -76,6 +76,121 @@ void logGLParams() {
     logger::glLog("------------------------------\n\n");
 }
 
+void printShaderInfoLog(GLuint shaderIndex) {
+    int maxLength = 2058;
+    int actualLength = 0;
+    char log[2048];
+    glGetShaderInfoLog(shaderIndex, maxLength, &actualLength, log);
+    logger::glLogOut("Shader info log for GL index %u:\n%s\n", shaderIndex, log);
+}
+
+bool checkShaderCompile(GLuint shaderIndex) {
+    int params = -1;
+    glGetShaderiv(shaderIndex, GL_COMPILE_STATUS, &params);
+    if (GL_TRUE != params) {
+        logger::glLogErr("ERROR: GL shader index %i did not compile\n", shaderIndex);
+        printShaderInfoLog(shaderIndex);
+        return false;
+    }
+    return true;
+}
+
+void printProgrammeInfoLog(GLuint programme) {
+    int maxLength = 2048;
+    int actualLength = 0;
+    char log[2048];
+    glGetProgramInfoLog(programme, maxLength, &actualLength, log);
+    logger::glLogOut("Program info log for GL index %u:\n%s", programme, log);
+}
+
+bool checkShaderLink(GLuint programme) {
+    int params = -1;
+    glGetProgramiv(programme, GL_LINK_STATUS, &params);
+    if (GL_TRUE != params) {
+        logger::glLogErr("ERROR: Cound not link shader programme GL index %u\n", programme);
+        printProgrammeInfoLog(programme);
+        return false;
+    }
+    return true;
+}
+
+const char* GLTypeToString(GLenum type) {
+    switch (type)
+    {
+        case GL_BOOL: return "bool";
+        case GL_INT: return "int";
+        case GL_FLOAT: return "float";
+        case GL_FLOAT_VEC2: return "vec2";
+        case GL_FLOAT_VEC3: return "vec3";
+        case GL_FLOAT_VEC4: return "vec4";
+        case GL_FLOAT_MAT2: return "mat2";
+        case GL_FLOAT_MAT3: return "mat3";
+        case GL_FLOAT_MAT4: return "mat4";
+        case GL_SAMPLER_2D: return "sampler2D";
+        case GL_SAMPLER_3D: return "sampler3D";
+        case GL_SAMPLER_CUBE: return "samplerCube";
+        case GL_SAMPLER_2D_SHADOW: return "sampler2DShadow";
+        default: break;
+    }
+    return "other";
+}
+
+void printAllInfo(GLuint programme) {
+    logger::glLogOut("\n---------------------\nShader programme %i info:\n", programme);
+    int params = -1;
+    glGetProgramiv(programme, GL_LINK_STATUS, &params);
+    logger::glLogOut("GL_LINK_STATUS = %i\n", params);
+
+    glGetProgramiv(programme, GL_ATTACHED_SHADERS, &params);
+    logger::glLogOut("GL_ATTACHED_SHADERS = %i\n", params);
+
+    glGetProgramiv(programme, GL_ACTIVE_ATTRIBUTES, &params);
+    logger::glLogOut("GL_ACTIVE_ATTRIBUTES = %i\n", params);
+    for (GLuint i = 0; i < (GLuint)params; i++) {
+        char name[64];
+        int maxLength = 64;
+        int actualLength = 0;
+        int size = 0;
+        GLenum type;
+        glGetActiveAttrib(programme, i, maxLength, &actualLength, &size, &type, name);
+        if (size > 1) {
+            for (int j = 0; j < size; j++) {
+                char longName[64];
+                sprintf(longName, "%s[%i]", name, j);
+                int location = glGetAttribLocation(programme, longName);
+                logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
+            }
+        } else {
+            int location = glGetAttribLocation(programme, name);
+            logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), name, location);
+        }
+    }
+
+    glGetProgramiv(programme, GL_ACTIVE_UNIFORMS, &params);
+    logger::glLogOut("GL_ACTIVE_UNIFORMS = %i\n", params);
+    for (GLuint i = 0; i < (GLuint)params; i++) {
+        char name[64];
+        int maxLength = 64;
+        int actualLength = 0;
+        int size = 0;
+        GLenum type;
+        glGetActiveUniform(programme, i, maxLength, &actualLength, &size, &type, name);
+        if (size > 1) {
+            for (int j = 0; j < size; j++) {
+                char longName[64];
+                sprintf(longName, "%s[%i]", name, j);
+                int location = glGetUniformLocation(programme, longName);
+                logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
+            }
+        } else {
+            int location = glGetUniformLocation(programme, name);
+            logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), name, location);
+        }
+    }
+
+    printProgrammeInfoLog(programme);
+}
+
 // We will use this function to update the window title with a frame rate
 void updateFpsCounter(GLFWwindow* window) {
     double currentSeconds;
@@ -178,14 +293,15 @@ int main() {
 
     // Create a shader here just to not waste time
     const char* vertex_shader =
-        "#version 410\n"
+        "#version 430\n"
         "in vec3 vp;"
+        "in float color;"
         "void main() {"
         "   gl_Position = vec4(vp, 1.0);"
         "}";
 
     const char* fragment_shader =
-        "#version 410\n"
+        "#version 430\n"
         "out vec4 frag_colour;"
         "void main() {"
         "   frag_colour = vec4(0.9, 0.6, 0.4, 1.0);"
@@ -195,15 +311,21 @@ int main() {
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &vertex_shader, NULL);
     glCompileShader(vs);
+    // Check for compile errors
+    checkShaderCompile(vs);
+
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fs, 1, &fragment_shader, NULL);
     glCompileShader(fs);
+    checkShaderCompile(fs);
 
     // Create a program and attach the shaders
     GLuint shader_programme = glCreateProgram();
-    glAttachShader(shader_programme, fs);
+    glAttachShader(shader_programme, vs);
     glAttachShader(shader_programme, fs);
     glLinkProgram(shader_programme);
+    checkShaderLink(shader_programme);
+    printAllInfo(shader_programme);
 
     // Close the program when we click the ESC key
     while(!glfwWindowShouldClose(window)) {
