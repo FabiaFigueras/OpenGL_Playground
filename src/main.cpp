@@ -155,7 +155,7 @@ void printAllInfo(GLuint programme) {
         glGetActiveAttrib(programme, i, maxLength, &actualLength, &size, &type, name);
         if (size > 1) {
             for (int j = 0; j < size; j++) {
-                char longName[64];
+                char longName[256];
                 sprintf(longName, "%s[%i]", name, j);
                 int location = glGetAttribLocation(programme, longName);
                 logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
@@ -177,7 +177,7 @@ void printAllInfo(GLuint programme) {
         glGetActiveUniform(programme, i, maxLength, &actualLength, &size, &type, name);
         if (size > 1) {
             for (int j = 0; j < size; j++) {
-                char longName[64];
+                char longName[256];
                 sprintf(longName, "%s[%i]", name, j);
                 int location = glGetUniformLocation(programme, longName);
                 logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
