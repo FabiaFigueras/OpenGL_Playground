@@ -7,11 +7,17 @@
         {
             "label": "Build and Run",
             "type": "shell",
-            "command": "cd build; mingw32-make; .\\bin\\OpenGL_Playground.exe",
+            "command": "cd build; mingw32-make; cd bin; ./OpenGL_Playground.exe",
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "build only",
+            "type": "shell",
+            "command": "cd build; mingw32-make",
+            "group": "build"
         }
     ]
 }

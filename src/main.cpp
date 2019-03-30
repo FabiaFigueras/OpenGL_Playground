@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include "utils/GL_Log.h"
+#include "render/shaderManager.h"
 
 int gWinWidth  = 640;
 int gWinHeight = 480;
@@ -256,6 +257,9 @@ int main() {
     glewExperimental = GL_TRUE;
     glewInit();
 
+    // Init the shader manager
+    ShaderManager shaderManager;
+
     // Get version info
     const GLubyte* renderer = glGetString(GL_RENDERER);
     const GLubyte* version = glGetString(GL_VERSION);
@@ -291,6 +295,7 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
+    shaderManager.initShaders();
     // Create a shader here just to not waste time
     const char* vertex_shader =
         "#version 430\n"

@@ -7,7 +7,7 @@ set(DEPENDENCIES ${PROJECT_SOURCE_DIR}/dependencies)
 find_package(OpenGL REQUIRED)
 link_directories(${OPENGL_gl_LIBRARY})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -W -Wall")
 
 # Add source files and link libraries
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
@@ -23,7 +23,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${DEPENDENCIES}/include)
 target_link_libraries(${PROJECT_NAME} glew32 glew32s libglfw3.a libglfw3dll.a ${OPENGL_gl_LIBRARY})
 
 # Copy the DLL files necessary to run the application
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${DEPENDENCIES}/bin"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)

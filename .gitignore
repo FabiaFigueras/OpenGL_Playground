@@ -1,6 +1,13 @@
 # No need to upload the build folder, build everytime
 #   the code is downloaded
-build/
+build/CMakeFiles/
+build/*.log
+build/*.cmake
+build/*.txt
+build/Makefile
+build/bin/*.log
+build/bin/*.dll
+build/bin/*.exe
 
 # Testing the README.txt
 README.txt
