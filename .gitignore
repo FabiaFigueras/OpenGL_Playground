@@ -8,6 +8,7 @@ build/Makefile
 build/bin/*.log
 build/bin/*.dll
 build/bin/*.exe
+.vscode/ipch/*
 
 # Testing the README.txt
 README.txt

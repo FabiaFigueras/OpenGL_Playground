@@ -6,14 +6,23 @@
 
 ShaderManager::ShaderManager() {
     shaders = Map();
+    programs = Map();
 }
 
 void ShaderManager::initShaders() {
     logger::glLogOut("\nInitializing Shaders\n--------------------\n");
     
-    addShader("basic.frag");
-    addShader("basic.vert");
+    loadShader("basic.frag");
+    loadShader("basic.vert");
+    
+    logger::glLogOut("\n");
+}
 
+void ShaderManager::reloadShaders() {
+    logger::glLogOut("\nReloading Shaders\n--------------------\n");
+    for (auto& pair : shaders) {
+        pair.second = addShader(pair.first, true);
+    }
     logger::glLogOut("\n");
 }
 
@@ -26,11 +35,15 @@ bool ShaderManager::shaderExists(std::string fileName) {
     return it != shaders.end();
 }
 
-void ShaderManager::addShader(std::string fileName) {
+void ShaderManager::loadShader(std::string name) {
+    shaders.insert(Map::value_type(name, addShader(name)));
+}
+
+GLuint ShaderManager::addShader(std::string fileName, bool reload) {
     // Check if the shader already exists
-    if (shaderExists(fileName)) {
+    if (shaderExists(fileName) && !reload) {
         logger::glLogOut("Shader '%s' already exists\n", fileName.c_str());
-        return;
+        return 0;
     }
 
     // Read compile and add it to the map
@@ -46,8 +59,9 @@ void ShaderManager::addShader(std::string fileName) {
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
     if (checkShaderCompile(shader)) {
-        shaders.insert(Map::value_type(fileName.c_str(), shader));
+        return shader;
     }
+    return 0;
 }
 
 std::string ShaderManager::readFromFile(std::string fileName) {
@@ -68,6 +82,8 @@ std::string ShaderManager::readFromFile(std::string fileName) {
     throw(errno);
 }
 
+
+// LOGGING METHODS
 void ShaderManager::printShaderInfoLog(GLuint shaderIndex) {
     int maxLength = 2058;
     int actualLength = 0;
@@ -85,4 +101,9 @@ bool ShaderManager::checkShaderCompile(GLuint shaderIndex) {
         return false;
     }
     return true;
+}
+// END LOGGIN METHODS
+
+GLuint ShaderManager::getShader(std::string name) {
+    return shaders.find(name)->second;
 }

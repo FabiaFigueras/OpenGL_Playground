@@ -13,6 +13,8 @@ int gFbHeight = 480;
 double previousSeconds;
 int frameCount;
 
+ShaderManager shaderManager;
+
 // Methods to resize the window and the framebuffer if the user rezises the window
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
     gWinWidth = width;
@@ -211,6 +213,17 @@ void updateFpsCounter(GLFWwindow* window) {
     frameCount++;
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, 1);
+    }
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    {
+        shaderManager.reloadShaders();
+    }
+}
+
 int main() {
     // Restart the log
     if (!logger::restartGLLog()) {
@@ -257,9 +270,6 @@ int main() {
     glewExperimental = GL_TRUE;
     glewInit();
 
-    // Init the shader manager
-    ShaderManager shaderManager;
-
     // Get version info
     const GLubyte* renderer = glGetString(GL_RENDERER);
     const GLubyte* version = glGetString(GL_VERSION);
@@ -296,40 +306,16 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     shaderManager.initShaders();
-    // Create a shader here just to not waste time
-    const char* vertex_shader =
-        "#version 430\n"
-        "in vec3 vp;"
-        "void main() {"
-        "   gl_Position = vec4(vp, 1.0);"
-        "}";
-
-    const char* fragment_shader =
-        "#version 430\n"
-        "out vec4 frag_colour;"
-        "void main() {"
-        "   frag_colour = vec4(0.9, 0.6, 0.4, 1.0);"
-        "}";
-
-    // Load the shader strings into a GLShader and compile them
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &vertex_shader, NULL);
-    glCompileShader(vs);
-    // Check for compile errors
-    checkShaderCompile(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &fragment_shader, NULL);
-    glCompileShader(fs);
-    checkShaderCompile(fs);
 
     // Create a program and attach the shaders
     GLuint shader_programme = glCreateProgram();
-    glAttachShader(shader_programme, vs);
-    glAttachShader(shader_programme, fs);
+    glAttachShader(shader_programme, shaderManager.getShader("basic.vert"));
+    glAttachShader(shader_programme, shaderManager.getShader("basic.frag"));
     glLinkProgram(shader_programme);
     checkShaderLink(shader_programme);
     printAllInfo(shader_programme);
+
+    glfwSetKeyCallback(window, key_callback);
 
     // Close the program when we click the ESC key
     while(!glfwWindowShouldClose(window)) {
@@ -346,10 +332,6 @@ int main() {
         glfwPollEvents();
         // Put everything that we've been drawing on the screen
         glfwSwapBuffers(window);
-
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-            glfwSetWindowShouldClose(window, 1);
-        }
     }
 
     // Close the GL context and any other GLFW resources
