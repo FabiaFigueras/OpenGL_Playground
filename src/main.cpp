@@ -3,7 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include "utils/GL_Log.h"
-#include "render/shaderManager.h"
+#include "render/assetManager.h"
+#include "render/shaderProgram.h"
 
 int gWinWidth  = 640;
 int gWinHeight = 480;
@@ -13,7 +14,7 @@ int gFbHeight = 480;
 double previousSeconds;
 int frameCount;
 
-ShaderManager shaderManager;
+AssetManager assetManager;
 
 // Methods to resize the window and the framebuffer if the user rezises the window
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
@@ -79,121 +80,6 @@ void logGLParams() {
     logger::glLog("------------------------------\n\n");
 }
 
-void printShaderInfoLog(GLuint shaderIndex) {
-    int maxLength = 2058;
-    int actualLength = 0;
-    char log[2048];
-    glGetShaderInfoLog(shaderIndex, maxLength, &actualLength, log);
-    logger::glLogOut("Shader info log for GL index %u:\n%s\n", shaderIndex, log);
-}
-
-bool checkShaderCompile(GLuint shaderIndex) {
-    int params = -1;
-    glGetShaderiv(shaderIndex, GL_COMPILE_STATUS, &params);
-    if (GL_TRUE != params) {
-        logger::glLogErr("ERROR: GL shader index %i did not compile\n", shaderIndex);
-        printShaderInfoLog(shaderIndex);
-        return false;
-    }
-    return true;
-}
-
-void printProgrammeInfoLog(GLuint programme) {
-    int maxLength = 2048;
-    int actualLength = 0;
-    char log[2048];
-    glGetProgramInfoLog(programme, maxLength, &actualLength, log);
-    logger::glLogOut("Program info log for GL index %u:\n%s", programme, log);
-}
-
-bool checkShaderLink(GLuint programme) {
-    int params = -1;
-    glGetProgramiv(programme, GL_LINK_STATUS, &params);
-    if (GL_TRUE != params) {
-        logger::glLogErr("ERROR: Cound not link shader programme GL index %u\n", programme);
-        printProgrammeInfoLog(programme);
-        return false;
-    }
-    return true;
-}
-
-const char* GLTypeToString(GLenum type) {
-    switch (type)
-    {
-        case GL_BOOL: return "bool";
-        case GL_INT: return "int";
-        case GL_FLOAT: return "float";
-        case GL_FLOAT_VEC2: return "vec2";
-        case GL_FLOAT_VEC3: return "vec3";
-        case GL_FLOAT_VEC4: return "vec4";
-        case GL_FLOAT_MAT2: return "mat2";
-        case GL_FLOAT_MAT3: return "mat3";
-        case GL_FLOAT_MAT4: return "mat4";
-        case GL_SAMPLER_2D: return "sampler2D";
-        case GL_SAMPLER_3D: return "sampler3D";
-        case GL_SAMPLER_CUBE: return "samplerCube";
-        case GL_SAMPLER_2D_SHADOW: return "sampler2DShadow";
-        default: break;
-    }
-    return "other";
-}
-
-void printAllInfo(GLuint programme) {
-    logger::glLogOut("\n---------------------\nShader programme %i info:\n", programme);
-    int params = -1;
-    glGetProgramiv(programme, GL_LINK_STATUS, &params);
-    logger::glLogOut("GL_LINK_STATUS = %i\n", params);
-
-    glGetProgramiv(programme, GL_ATTACHED_SHADERS, &params);
-    logger::glLogOut("GL_ATTACHED_SHADERS = %i\n", params);
-
-    glGetProgramiv(programme, GL_ACTIVE_ATTRIBUTES, &params);
-    logger::glLogOut("GL_ACTIVE_ATTRIBUTES = %i\n", params);
-    for (GLuint i = 0; i < (GLuint)params; i++) {
-        char name[64];
-        int maxLength = 64;
-        int actualLength = 0;
-        int size = 0;
-        GLenum type;
-        glGetActiveAttrib(programme, i, maxLength, &actualLength, &size, &type, name);
-        if (size > 1) {
-            for (int j = 0; j < size; j++) {
-                char longName[256];
-                sprintf(longName, "%s[%i]", name, j);
-                int location = glGetAttribLocation(programme, longName);
-                logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
-            }
-        } else {
-            int location = glGetAttribLocation(programme, name);
-            logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), name, location);
-        }
-    }
-
-    glGetProgramiv(programme, GL_ACTIVE_UNIFORMS, &params);
-    logger::glLogOut("GL_ACTIVE_UNIFORMS = %i\n", params);
-    for (GLuint i = 0; i < (GLuint)params; i++) {
-        char name[64];
-        int maxLength = 64;
-        int actualLength = 0;
-        int size = 0;
-        GLenum type;
-        glGetActiveUniform(programme, i, maxLength, &actualLength, &size, &type, name);
-        if (size > 1) {
-            for (int j = 0; j < size; j++) {
-                char longName[256];
-                sprintf(longName, "%s[%i]", name, j);
-                int location = glGetUniformLocation(programme, longName);
-                logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), longName, location);
-            }
-        } else {
-            int location = glGetUniformLocation(programme, name);
-            logger::glLogOut("  %i) type: %s, name: %s, location: %i\n", i, GLTypeToString(type), name, location);
-        }
-    }
-
-    printProgrammeInfoLog(programme);
-}
-
 // We will use this function to update the window title with a frame rate
 void updateFpsCounter(GLFWwindow* window) {
     double currentSeconds;
@@ -220,7 +106,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
-        shaderManager.reloadShaders();
+        assetManager.reloadPrograms();
     }
 }
 
@@ -305,15 +191,10 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    shaderManager.initShaders();
-
-    // Create a program and attach the shaders
-    GLuint shader_programme = glCreateProgram();
-    glAttachShader(shader_programme, shaderManager.getShader("basic.vert"));
-    glAttachShader(shader_programme, shaderManager.getShader("basic.frag"));
-    glLinkProgram(shader_programme);
-    checkShaderLink(shader_programme);
-    printAllInfo(shader_programme);
+    // Add the 'basic' program to the Asset Manager
+    ShaderProgram* basicPrg = assetManager.addProgram("basic");
+    basicPrg->addShaders(GL_VERTEX_SHADER, "basic.vert", GL_FRAGMENT_SHADER, "basic.frag");
+    basicPrg->link();
 
     glfwSetKeyCallback(window, key_callback);
 
@@ -324,7 +205,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, gFbWidth, gFbHeight);
         glClearColor(0.7f, 0.8f, 0.8f, 1.0f);
-        glUseProgram(shader_programme);
+        assetManager.getProgram("basic")->activate();
         glBindVertexArray(vao);
         // Draw points in TRIANGLE MODE for number of vertexs, starts at point number 0
         glDrawArrays(GL_TRIANGLES, 0, sizeof(points));
@@ -333,6 +214,8 @@ int main() {
         // Put everything that we've been drawing on the screen
         glfwSwapBuffers(window);
     }
+
+    // (F) TODO: Delete all the programs from the AssetManager
 
     // Close the GL context and any other GLFW resources
     glfwTerminate();
