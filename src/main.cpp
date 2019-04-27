@@ -169,27 +169,37 @@ int main() {
     glDepthFunc(GL_LESS);       // Depth testing interprets a smaller value as closer
 
     GLfloat points[] = {
-         0.51f,  0.49f, 0.0f,
-         0.51f, -0.51f, 0.0f,
-        -0.49f, -0.51f, 0.0f,
-        -0.51f, -0.49f, 0.0f,
-        -0.51f,  0.51f, 0.0f,
-         0.49f,  0.51f, 0.0f
+         0.0f,  0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f
+    };
+    GLfloat colors[] {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
     };
 
     // Create all the necessary VBO
-    GLuint vbo = 0;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    GLuint pointsVbo = 0;
+    glGenBuffers(1, &pointsVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+    GLuint colorsVbo = 0;
+    glGenBuffers(1, &colorsVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, colorsVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 
     // Create the VAO that will allow us to manage the mesh more efficiently
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glBindBuffer(GL_ARRAY_BUFFER, colorsVbo);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
 
     // Add the 'basic' program to the Asset Manager
     ShaderProgram* basicPrg = assetManager.addProgram("basic");
@@ -197,6 +207,10 @@ int main() {
     basicPrg->link();
 
     glfwSetKeyCallback(window, key_callback);
+
+    glEnable(GL_CULL_FACE); // Cull face
+    glCullFace(GL_BACK);    // Cull back face
+    glFrontFace(GL_CW);     // GL_CCW for counter clock-wise
 
     // Close the program when we click the ESC key
     while(!glfwWindowShouldClose(window)) {
@@ -208,7 +222,7 @@ int main() {
         assetManager.getProgram("basic")->activate();
         glBindVertexArray(vao);
         // Draw points in TRIANGLE MODE for number of vertexs, starts at point number 0
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(points));
+        glDrawArrays(GL_TRIANGLES, 0, 3);
         // Update other events like input handling
         glfwPollEvents();
         // Put everything that we've been drawing on the screen
