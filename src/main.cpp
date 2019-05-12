@@ -179,6 +179,13 @@ int main() {
         0.0f, 0.0f, 1.0f
     };
 
+    float matrix[] = {
+        1.0f, 0.0f, 0.0f, 0.0f, // first column
+        0.0f, 1.0f, 0.0f, 0.0f, // second column
+        0.0f, 0.0f, 1.0f, 0.0f, // third column
+        0.5f, 0.0f, 0.0f, 1.0f
+    };
+
     // Create all the necessary VBO
     GLuint pointsVbo = 0;
     glGenBuffers(1, &pointsVbo);
@@ -219,7 +226,11 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, gFbWidth, gFbHeight);
         glClearColor(0.7f, 0.8f, 0.8f, 1.0f);
+        
+        // Activate the program to be used and add the matrix uniform
         assetManager.getProgram("basic")->activate();
+        glUniformMatrix4fv(UNIFORM_MATRIX, 1, GL_FALSE, matrix);
+
         glBindVertexArray(vao);
         // Draw points in TRIANGLE MODE for number of vertexs, starts at point number 0
         glDrawArrays(GL_TRIANGLES, 0, 3);

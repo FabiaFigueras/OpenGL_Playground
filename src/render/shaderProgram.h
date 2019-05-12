@@ -19,6 +19,10 @@ struct Shader
     GLuint id;
 };
 
+enum Uniforms {
+    UNIFORM_MATRIX = 0
+};
+
 class ShaderProgram
 {
 private:
@@ -45,6 +49,8 @@ public:
     void link();
     void reload();
     void activate();
+
+    GLuint getId() { return id; }
 };
 
 #endif
