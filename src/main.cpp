@@ -5,6 +5,7 @@
 #include "utils/GL_Log.h"
 #include "render/assetManager.h"
 #include "render/shaderProgram.h"
+#include "math.h"
 
 int gWinWidth  = 640;
 int gWinHeight = 480;
@@ -99,8 +100,7 @@ void updateFpsCounter(GLFWwindow* window) {
     frameCount++;
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, 1);
     }
@@ -178,7 +178,6 @@ int main() {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f
     };
-
     float matrix[] = {
         1.0f, 0.0f, 0.0f, 0.0f, // first column
         0.0f, 1.0f, 0.0f, 0.0f, // second column
@@ -219,6 +218,10 @@ int main() {
     glCullFace(GL_BACK);    // Cull back face
     glFrontFace(GL_CW);     // GL_CCW for counter clock-wise
 
+
+    float speed = 0.5f;
+    float lastPosition = 0.0f;
+
     // Close the program when we click the ESC key
     while(!glfwWindowShouldClose(window)) {
         updateFpsCounter(window);
@@ -226,7 +229,20 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, gFbWidth, gFbHeight);
         glClearColor(0.7f, 0.8f, 0.8f, 1.0f);
-        
+
+        // Update the triangle position by moving changing the matrix
+        static double previousSeconds = glfwGetTime();
+        double currentSeconds = glfwGetTime();
+        double elapsedSeconds = currentSeconds - previousSeconds;
+        previousSeconds = currentSeconds;
+        // Reverse direction when going to far left or right
+        if (fabs(lastPosition) > 0.5f) {
+            speed = -speed;
+        }
+        // Update the matrix
+        matrix[12] = elapsedSeconds * speed + lastPosition;
+        lastPosition = matrix[12];
+
         // Activate the program to be used and add the matrix uniform
         assetManager.getProgram("basic")->activate();
         glUniformMatrix4fv(UNIFORM_MATRIX, 1, GL_FALSE, matrix);
